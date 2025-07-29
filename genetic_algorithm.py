@@ -1,113 +1,108 @@
 import random
 import string
 import math
-
-MIN_LENGTH = 8
-MAX_LENGTH = 36
-REQUIRED_CHARS = {
-    'uppercase': string.ascii_uppercase,
-    'lowercase': string.ascii_letters,
-    'digits': string.digits,
-    'special': '!@#$%^&*()_+-=[]{}|;:,.<>?'
-}
-
-POPULATION_SIZE = 100
-GENERATIONS = 3000
-MUTATION_RATE = 0.1
-TOURNAMENT_SIZE = 5
+import pandas as pd
 
 
-def generate_random_password():
-    length = random.randint(MIN_LENGTH, MAX_LENGTH)
-    all_chars = ''.join(REQUIRED_CHARS.values())
-    return ''.join(random.choice(all_chars) for _ in range(length))
+class GeneticAlgorithm:
+    def __init__(self, population_size, generations, mutation_rate, tournament_size, max_length, uppercase, lowercase,
+                 digits, special, min_length=8):
+        self.MIN_LENGTH = min_length
+        self.MAX_LENGTH = max_length
 
+        self.REQUIRED_CHARS = {}
+        if uppercase:
+            self.REQUIRED_CHARS['uppercase'] = string.ascii_uppercase
+        if lowercase:
+            self.REQUIRED_CHARS['lowercase'] = string.ascii_letters
+        if digits:
+            self.REQUIRED_CHARS['digits'] = string.digits
+        if special:
+            self.REQUIRED_CHARS['special'] = '!@#$%^&*()_+-=[]{}|;:,.<>?'
 
-def calculate_entropy(password):
-    char_count = {}
-    for char in password:
-        char_count[char] = char_count.get(char, 0) + 1
-    entropy = 0
-    for count in char_count.values():
-        probability = count / len(password)
-        entropy -= probability * math.log2(probability)
-    return entropy
+        self.POPULATION_SIZE = population_size
+        self.GENERATIONS = generations
+        self.MUTATION_RATE = mutation_rate
+        self.TOURNAMENT_SIZE = tournament_size
 
+    def create_initial_population(self):
+        common_passwords_csv = pd.read_csv('common_passwords.csv')
+        common_passwords = common_passwords_csv['password'].to_list()
 
-def calculate_fitness(password):
-    if len(password) < MIN_LENGTH or len(password) > MAX_LENGTH:
-        return 0
+        return random.sample(common_passwords, self.POPULATION_SIZE)
 
-    num_requirements_met = 0
-    for char_set in REQUIRED_CHARS.values():
-        if any(char in password for char in char_set):
-            num_requirements_met += 1
+    def calculate_entropy(self, password):
+        char_count = {}
+        for char in password:
+            char_count[char] = char_count.get(char, 0) + 1
+        entropy = 0
+        for count in char_count.values():
+            probability = count / len(password)
+            entropy -= probability * math.log2(probability)
+        return entropy
 
-    entropy = calculate_entropy(password)
-    return entropy * num_requirements_met
+    def calculate_fitness(self, password):
+        if len(password) < self.MIN_LENGTH or len(password) > self.MAX_LENGTH:
+            return 0
 
+        num_requirements_met = 0
+        for char_set in self.REQUIRED_CHARS.values():
+            if any(char in password for char in char_set):
+                num_requirements_met += 1
 
-def tournament_selection(population, fitnesses):
-    tournament = random.sample(list(zip(population, fitnesses)), TOURNAMENT_SIZE)
-    return max(tournament, key=lambda x: x[1])[0]
+        entropy = self.calculate_entropy(password)
+        return entropy * num_requirements_met
 
+    def tournament_selection(self, population, fitnesses):
+        tournament = random.sample(list(zip(population, fitnesses)), self.TOURNAMENT_SIZE)
+        return max(tournament, key=lambda x: x[1])[0]
 
-def crossover(parent1, parent2):
-    point = random.randint(0, min(len(parent1), len(parent2)))
-    return parent1[:point] + parent2[point:]
+    def crossover(self, parent1, parent2):
+        point = random.randint(0, min(len(parent1), len(parent2)))
+        return parent1[:point] + parent2[point:]
 
+    def mutate(self, password):
+        if random.random() > self.MUTATION_RATE:
+            return password
 
-def calculate_max_fitness():
-    max_requirements_met = len(REQUIRED_CHARS)
-    max_entropy = math.log2(MAX_LENGTH)
-    return max_entropy * max_requirements_met
+        chars = list(password)
+        pos = random.randint(0, len(chars) - 1)
+        all_chars = ''.join(self.REQUIRED_CHARS.values())
 
+        action = random.choice(['replace', 'add'])
 
-def mutate(password):
-    if random.random() > MUTATION_RATE:
-        return password
+        if action == 'replace':
+            chars[pos] = random.choice(all_chars)
+        elif action == 'add':
+            chars.append(random.choice(all_chars))
 
-    chars = list(password)
-    pos = random.randint(0, len(chars) - 1)
-    all_chars = ''.join(REQUIRED_CHARS.values())
-    chars[pos] = random.choice(all_chars)
-    return ''.join(chars)
+        result = ''.join(chars)
+        if len(result) > self.MAX_LENGTH:
+            result = result[:self.MAX_LENGTH]
+        return result
 
+    def genetic_algorithm(self):
+        population = self.create_initial_population()
 
-def genetic_algorithm():
-    population = [generate_random_password() for _ in range(POPULATION_SIZE)]
-    max_possible_fitness = calculate_max_fitness()
+        for generation in range(self.GENERATIONS):
+            fitnesses = [self.calculate_fitness(pwd) for pwd in population]
+            best_fitness = max(fitnesses)
+            best_password = population[fitnesses.index(best_fitness)]
 
-    print(f"Max Possible Fitness: {max_possible_fitness}")
+            new_population = [best_password]
+            for _ in range(self.POPULATION_SIZE - 1):
+                parent1 = self.tournament_selection(population, fitnesses)
+                parent2 = self.tournament_selection(population, fitnesses)
+                child = self.crossover(parent1, parent2)
+                child = self.mutate(child)
+                new_population.append(child)
 
-    for generation in range(GENERATIONS):
-        fitnesses = [calculate_fitness(pwd) for pwd in population]
-        best_fitness = max(fitnesses)
-        best_password = population[fitnesses.index(best_fitness)]
+            population = new_population
 
-        if best_fitness >= max_possible_fitness:
-            print(f"Maximum fitness reached at generation {generation}")
-            return best_password, best_fitness
+            yield best_fitness, best_password, generation + 1
 
-        new_population = [best_password]
-        for _ in range(POPULATION_SIZE - 1):
-            parent1 = tournament_selection(population, fitnesses)
-            parent2 = tournament_selection(population, fitnesses)
-            child = crossover(parent1, parent2)
-            child = mutate(child)
-            new_population.append(child)
+        final_fitnesses = [self.calculate_fitness(pwd) for pwd in population]
+        best_fitness = max(final_fitnesses)
+        best_password = population[final_fitnesses.index(best_fitness)]
 
-        population = new_population
-
-    final_fitnesses = [calculate_fitness(pwd) for pwd in population]
-    best_fitness = max(final_fitnesses)
-    best_password = population[final_fitnesses.index(best_fitness)]
-    print(f"Completed {GENERATIONS} generations")
-
-    return best_password, best_fitness
-
-
-if __name__ == "__main__":
-    password, fitness = genetic_algorithm()
-    print(f"Best password found: {password}")
-    print(f"Fitness score: {fitness}")
+        return best_password, best_fitness
