@@ -68,7 +68,7 @@ if submit:
                 line_chart.add_rows(new_row)
 
                 st.text(
-                    f"Best fitness: {best_fitness}\nGenerations: {
+                    f"Best fitness: {best_fitness}\nGeneration: {
                         generations
                     }\nBest password: {best_password}"
                 )
