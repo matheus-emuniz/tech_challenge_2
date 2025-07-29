@@ -7,7 +7,7 @@ from genetic_algorithm import GeneticAlgorithm
 st.title("Genetic algorithm")
 
 with st.form("config_form"):
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2, gap="medium")
     with col1:
         st.subheader("Password configuration")
 
@@ -30,17 +30,45 @@ with st.form("config_form"):
     submit = st.form_submit_button("Submit")
 
 if submit:
-    initial_df = pd.DataFrame({ 'generations': [0], 'best_fitness': [0.0] }, columns=['generations', 'best_fitness'])
-    line_chart = st.line_chart(initial_df, x="generations", y="best_fitness")
+    with st.container():
+        st.subheader("Results")
 
-    ga = GeneticAlgorithm(max_length=length, population_size=population_size, generations=generations,
-                          mutation_rate=mutation_rate, tournament_size=tournament_size,
-                          uppercase=upper, lowercase=lower, digits=digits, special=special)
+        initial_df = pd.DataFrame(
+            {"generations": [0], "best_fitness": [0.0]},
+            columns=["generations", "best_fitness"],
+        )
 
-    results = ga.genetic_algorithm()
+        line_chart = st.line_chart(
+            initial_df, x="generations", y="best_fitness")
 
-    for best_fitness, best_password, generations in results:
-        time.sleep(0.2)
-        new_row = pd.DataFrame({ 'generations': [generations], 'best_fitness': [best_fitness] }, columns=['generations', 'best_fitness'])
-        st.session_state.best_password = best_password
-        line_chart.add_rows(new_row)
+        ga = GeneticAlgorithm(
+            max_length=length,
+            population_size=population_size,
+            generations=generations,
+            mutation_rate=mutation_rate,
+            tournament_size=tournament_size,
+            uppercase=upper,
+            lowercase=lower,
+            digits=digits,
+            special=special,
+        )
+
+        results = ga.genetic_algorithm()
+
+        with st.empty():
+            for best_fitness, best_password, generations in results:
+                time.sleep(0.2)
+                new_row = pd.DataFrame(
+                    {"generations": [generations],
+                        "best_fitness": [best_fitness]},
+                    columns=["generations", "best_fitness"],
+                )
+
+                st.session_state.best_password = best_password
+                line_chart.add_rows(new_row)
+
+                st.text(
+                    f"Best fitness: {best_fitness}\nGenerations: {
+                        generations
+                    }\nBest password: {best_password}"
+                )
