@@ -20,7 +20,7 @@ with st.form("config_form"):
     with col2:
         st.subheader("Algorithm configuration")
 
-        generations = st.slider("Generations", 1, 2000, value=1000)
+        generations = st.slider("Generations", 1, 2000, value=100)
         mutation_rate = st.slider(
             "Mutation rate", 0.0, 1.0, format="%0.2f", step=0.01, value=0.1
         )
@@ -57,7 +57,6 @@ if submit:
 
         with st.empty():
             for best_fitness, best_password, generations in results:
-                time.sleep(0.2)
                 new_row = pd.DataFrame(
                     {"generations": [generations],
                         "best_fitness": [best_fitness]},
@@ -68,7 +67,5 @@ if submit:
                 line_chart.add_rows(new_row)
 
                 st.text(
-                    f"Best fitness: {best_fitness}\nGeneration: {
-                        generations
-                    }\nBest password: {best_password}"
+                    f"Best fitness: {best_fitness}\nGeneration: {generations}\nBest password: {best_password}"
                 )

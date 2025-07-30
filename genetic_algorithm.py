@@ -2,6 +2,7 @@ import random
 import string
 import math
 import pandas as pd
+from zxcvbn import zxcvbn
 
 
 class GeneticAlgorithm:
@@ -45,13 +46,17 @@ class GeneticAlgorithm:
         if len(password) < self.MIN_LENGTH or len(password) > self.MAX_LENGTH:
             return 0
 
+        # Usamos uma biblioteca externa para calcular a força da senha
+        # e usamos o score dela para influenciar a fitness.
+        zxcvbn_result = zxcvbn(password)
+
         num_requirements_met = 0
         for char_set in self.REQUIRED_CHARS.values():
             if any(char in password for char in char_set):
                 num_requirements_met += 1
 
         entropy = self.calculate_entropy(password)
-        return entropy * num_requirements_met
+        return entropy * num_requirements_met * zxcvbn_result['score']
 
     def tournament_selection(self, population, fitnesses):
         tournament = random.sample(list(zip(population, fitnesses)), self.TOURNAMENT_SIZE)
@@ -69,6 +74,8 @@ class GeneticAlgorithm:
         pos = random.randint(0, len(chars) - 1)
         all_chars = ''.join(self.REQUIRED_CHARS.values())
 
+        # Precisamos possibilitar a adição de caracteres para que
+        # a senha final possa aumentar.
         action = random.choice(['replace', 'add'])
 
         if action == 'replace':
@@ -89,7 +96,7 @@ class GeneticAlgorithm:
             best_fitness = max(fitnesses)
             best_password = population[fitnesses.index(best_fitness)]
 
-            new_population = [best_password]
+            new_population = []
             for _ in range(self.POPULATION_SIZE - 1):
                 parent1 = self.tournament_selection(population, fitnesses)
                 parent2 = self.tournament_selection(population, fitnesses)
