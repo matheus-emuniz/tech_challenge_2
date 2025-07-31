@@ -25,6 +25,7 @@ class GeneticAlgorithm:
         self.GENERATIONS = generations
         self.MUTATION_RATE = mutation_rate
         self.TOURNAMENT_SIZE = tournament_size
+        self.CONVERGENCE_GENERATIONS = 10
 
     def create_initial_population(self):
         common_passwords_csv = pd.read_csv('common_passwords.csv')
@@ -71,7 +72,6 @@ class GeneticAlgorithm:
             return password
 
         chars = list(password)
-        pos = random.randint(0, len(chars) - 1)
         all_chars = ''.join(self.REQUIRED_CHARS.values())
 
         # Precisamos possibilitar a adição de caracteres para que
@@ -97,11 +97,29 @@ class GeneticAlgorithm:
 
     def genetic_algorithm(self):
         population = self.create_initial_population()
+        generations_below_threshold = 0
+        last_best_fitness = 0
+        historical_best_fitness = 0
 
         for generation in range(self.GENERATIONS):
             fitnesses = [self.calculate_fitness(pwd) for pwd in population]
             best_fitness = max(fitnesses)
             best_password = population[fitnesses.index(best_fitness)]
+
+
+            # Cálculo da convergência
+            if last_best_fitness > 0 and last_best_fitness >= best_fitness:
+                generations_below_threshold += 1
+            else:
+                generations_below_threshold = 0
+
+            historical_best_fitness = max(historical_best_fitness, best_fitness)
+
+            if generations_below_threshold >= self.CONVERGENCE_GENERATIONS:
+                yield historical_best_fitness, best_password, generation + 1
+                break
+
+            last_best_fitness = best_fitness
 
             new_population = [best_password]
             for _ in range(self.POPULATION_SIZE - 1):
@@ -113,7 +131,7 @@ class GeneticAlgorithm:
 
             population = new_population
 
-            yield best_fitness, best_password, generation + 1
+            yield historical_best_fitness, best_password, generation + 1
 
         final_fitnesses = [self.calculate_fitness(pwd) for pwd in population]
         best_fitness = max(final_fitnesses)

@@ -22,9 +22,9 @@ with st.form("config_form"):
 
         generations = st.slider("Generations", 1, 2000, value=100)
         mutation_rate = st.slider(
-            "Mutation rate", 0.0, 1.0, format="%0.2f", step=0.01, value=0.1
+            "Mutation rate", 0.0, 1.0, format="%0.2f", step=0.01, value=0.2
         )
-        tournament_size = st.slider("Tournament size", 1, 10, value=5)
+        tournament_size = st.slider("Tournament size", 1, 10, value=2)
         population_size = st.slider("Population size", 1, 500, value=100)
 
     submit = st.form_submit_button("Submit")
