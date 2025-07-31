@@ -66,8 +66,8 @@ class GeneticAlgorithm:
         point = random.randint(0, min(len(parent1), len(parent2)))
         return parent1[:point] + parent2[point:]
 
-    def mutate(self, password):
-        if random.random() > self.MUTATION_RATE:
+    def mutate(self, password, action = None):
+        if random.random() < self.MUTATION_RATE:
             return password
 
         chars = list(password)
@@ -76,12 +76,19 @@ class GeneticAlgorithm:
 
         # Precisamos possibilitar a adição de caracteres para que
         # a senha final possa aumentar.
-        action = random.choice(['replace', 'add'])
+        if action is None:
+            action = random.choice(['add', 'scramble'])
 
-        if action == 'replace':
-            chars[pos] = random.choice(all_chars)
-        elif action == 'add':
+        if action == 'add':
             chars.append(random.choice(all_chars))
+        elif action == 'scramble':
+            scramble_size = random.randint(2, len(chars) - 1)
+            scramble_pos = random.randint(0, len(chars) - scramble_size)
+            if scramble_pos + scramble_size > len(chars):
+                scramble_pos = len(chars) - scramble_size
+            subset = chars[scramble_pos:scramble_pos + scramble_size]
+            random.shuffle(subset)
+            chars[scramble_pos:scramble_pos + scramble_size] = subset
 
         result = ''.join(chars)
         if len(result) > self.MAX_LENGTH:
@@ -96,7 +103,7 @@ class GeneticAlgorithm:
             best_fitness = max(fitnesses)
             best_password = population[fitnesses.index(best_fitness)]
 
-            new_population = []
+            new_population = [best_password]
             for _ in range(self.POPULATION_SIZE - 1):
                 parent1 = self.tournament_selection(population, fitnesses)
                 parent2 = self.tournament_selection(population, fitnesses)
