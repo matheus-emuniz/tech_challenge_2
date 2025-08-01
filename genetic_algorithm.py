@@ -25,7 +25,7 @@ class GeneticAlgorithm:
         self.GENERATIONS = generations
         self.MUTATION_RATE = mutation_rate
         self.TOURNAMENT_SIZE = tournament_size
-        self.CONVERGENCE_GENERATIONS = 10
+        self.CONVERGENCE_GENERATIONS = 20
 
     def create_initial_population(self):
         common_passwords_csv = pd.read_csv('common_passwords.csv')
@@ -64,8 +64,23 @@ class GeneticAlgorithm:
         return max(tournament, key=lambda x: x[1])[0]
 
     def crossover(self, parent1, parent2):
-        point = random.randint(0, min(len(parent1), len(parent2)))
-        return parent1[:point] + parent2[point:]
+        # Uniform crossover
+        min_len = min(len(parent1), len(parent2))
+        
+        child = ""
+        
+        for i in range(min_len):
+            if random.random() < 0.5:
+                child += parent1[i]
+            else:
+                child += parent2[i]
+        
+        if len(parent1) > len(parent2):
+            child += parent1[min_len:]
+        elif len(parent2) > len(parent1):
+            child += parent2[min_len:]
+        
+        return child[:self.MAX_LENGTH]
 
     def mutate(self, password, action = None):
         if random.random() < self.MUTATION_RATE:
@@ -107,7 +122,8 @@ class GeneticAlgorithm:
             best_password = population[fitnesses.index(best_fitness)]
 
 
-            # Cálculo da convergência
+            # Cálculo da convergência | usando o elitismo não precisamos de um 'threshold'
+            # pois o melhor resultado sempre é mantido.
             if last_best_fitness > 0 and last_best_fitness >= best_fitness:
                 generations_below_threshold += 1
             else:
@@ -128,7 +144,7 @@ class GeneticAlgorithm:
                 child = self.crossover(parent1, parent2)
                 child = self.mutate(child)
                 new_population.append(child)
-
+            
             population = new_population
 
             yield historical_best_fitness, best_password, generation + 1
