@@ -83,7 +83,7 @@ class GeneticAlgorithm:
         return child[:self.MAX_LENGTH]
 
     def mutate(self, password, action = None):
-        if random.random() < self.MUTATION_RATE:
+        if random.random() > self.MUTATION_RATE:
             return password
 
         chars = list(password)

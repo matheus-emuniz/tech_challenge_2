@@ -137,6 +137,10 @@ The fitness function combines multiple factors:
 - Higher mutation rates increase exploration but may slow convergence
 - Tournament size affects selection pressure and convergence speed
 
+### Kaggle dataset
+
+The dataset used in this project is from Kaggle and can be found [here](https://www.kaggle.com/datasets/bradleyjones/common-passwords).
+
 ---
 
 *Built with ❤️ using Python, Streamlit, and Genetic Algorithms*
